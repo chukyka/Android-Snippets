@@ -1,0 +1,178 @@
+public class NuevosEpisodios extends Activity {
+ 
+    String url = "http://www.horadeaventuraonline.com/appandroid/nuevo/list.php";
+    List<String> titulos, descripciones_c, fotos, id;
+ 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.temporada);
+ 
+        /***  Cambio el action bar por el mio  ***/
+ 
+        //hiding default app icon
+        ActionBar actionBar = getActionBar();
+        actionBar.setDisplayShowHomeEnabled(false);
+        //displaying custom ActionBar
+        actionBar.setCustomView(R.layout.my_action_bar);
+        actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+ 
+        ImageButton img = (ImageButton) findViewById(R.id.imageButton);
+        img.setBackgroundResource(R.drawable.back);
+        TextView titulo = (TextView) findViewById(R.id.titulo);
+        titulo.setText("Nuevos episodios");
+        img.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finish();
+            }
+        });
+ 
+        TextView tv = (TextView) findViewById(R.id.descripcion_temp);
+        TextView titul = (TextView) findViewById(R.id.nombre_temp);
+        titul.setText("Nuevos episodios");
+        tv.setText("Aquí se listaran los nuevos episodios, los mas nuevos aparecen mas arriba");
+        ConectionDetector cd = new ConectionDetector(getApplicationContext());
+        Boolean isInternetPresent = cd.isConnectingToInternet();
+ 
+        if(isInternetPresent){
+            new MyAsyncTask().execute();
+        }else{
+            showAlertDialog(NuevosEpisodios.this, "No hay conexion",
+                    "Tu dispositivo no esta conectado", false);
+        }
+    }
+ 
+    private class MyAsyncTask extends AsyncTask<String, String, String> {
+ 
+        ProgressDialog dialog;
+        protected void onPreExecute() {
+            dialog = ProgressDialog.show(NuevosEpisodios.this, "",
+                    "Descargando informacion", true);
+        }
+ 
+        @Override
+        protected String doInBackground(String... arg0) {
+ 
+            //Creamos el cliente HTTP
+            DefaultHttpClient httpclient = new DefaultHttpClient(new BasicHttpParams());
+ 
+            //Pasamos por POST la url
+            HttpPost htppost = new HttpPost(url);
+ 
+            //Definimos que tipo de dato nos pasan
+            htppost.setHeader("Content-type", "application/json");
+ 
+            //Leer data del URL
+            InputStream inputStream = null;
+ 
+            String result = null;
+ 
+            try {
+                //Pedir una respuesta de la pagina
+                HttpResponse response = httpclient.execute(htppost);
+                //Guarda todo el contenido
+                HttpEntity entity = response.getEntity();
+                //Obtenog el contenido
+                inputStream = entity.getContent();
+                //Lee todo el contenido
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"), 8);
+                //Guarda todo ahi
+                StringBuilder theStringBuilder = new StringBuilder();
+ 
+                String line = null;
+                //Aca leemos todo
+                while ((line = reader.readLine()) != null) {
+                    theStringBuilder.append(line + "\n");
+                }
+                //Pasamos todo a result
+                result = theStringBuilder.toString();
+ 
+            } catch (Exception e) {
+ 
+                e.printStackTrace();
+ 
+            } finally {
+ 
+                try {
+                    //Si se guardo algo cerramos el input stream
+                    if (inputStream != null) {
+                        inputStream.close();
+                    } else {
+                        Log.e("No funciono", "Cerrar el inputStream");
+                    }
+ 
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+ 
+            }
+ 
+            JSONArray jsonArray;
+            try {
+                // Hacemos que el resultado sea un JSONObject
+                jsonArray = new JSONArray(result);
+ 
+                titulos = new ArrayList<String>();
+                descripciones_c = new ArrayList<String>();
+                id = new ArrayList<String>();
+                fotos = new ArrayList<String>();
+ 
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonobject = jsonArray.getJSONObject(i);
+                    id.add(jsonobject.getString("id"));
+                    titulos.add(jsonobject.getString("title"));
+                    descripciones_c.add(jsonobject.getString("desc_short"));
+                    fotos.add("http://www.horadeaventuraonline.com/appandroid/nuevo/" + jsonobject.getString("image"));
+                }
+ 
+ 
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+ 
+ 
+            return result;
+        }
+ 
+        @Override
+        protected void onPostExecute(String result) {
+            if (dialog.isShowing()) {
+                dialog.dismiss();
+            }
+            int cantpx = dpToPx(60);
+ 
+            ListView lv = (ListView) findViewById(R.id.listView);
+            /** ID **/
+            String[] id_ep = new String[id.size()];
+            id_ep = id.toArray(id_ep);
+ 
+            /** Titulos **/
+            String[] titulo_episodio = new String[titulos.size()];
+            titulo_episodio = titulos.toArray(titulo_episodio);
+ 
+            /** Descripciones  **/
+            String[] descripcion_episodio = new String[descripciones_c.size()];
+            descripcion_episodio = descripciones_c.toArray(descripcion_episodio);
+ 
+            /** Fotos **/
+            String[] fotos_episodio = new String[fotos.size()];
+            fotos_episodio = fotos.toArray(fotos_episodio);
+ 
+            CustomListNuevos adapter = new CustomListNuevos(NuevosEpisodios.this, titulo_episodio, descripcion_episodio, fotos_episodio);
+            lv=(ListView)findViewById(R.id.listView);
+            lv.setAdapter(adapter);
+            lv.setFocusable(false);
+            Helper.getListViewSize(lv, cantpx);
+            lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view,
+                                        int position, long id) {
+                    Toast.makeText(getApplicationContext(), "Seleccionaste episodio " + ++position, Toast.LENGTH_SHORT).show();
+                }
+            });
+ 
+        }
+ 
+ 
+    }
