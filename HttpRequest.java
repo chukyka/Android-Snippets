@@ -55,13 +55,13 @@ public class MainActivity extends ActionBarActivity {
                 public void postData(String titl, String desc) {
             // Create a new HttpClient and Post Header
             HttpClient httpclient = new DefaultHttpClient();
-            HttpPost httppost = new HttpPost("http://design4u.uphero.com/add.php");
+            HttpPost httppost = new HttpPost("url");//url where you send the data
  
                 try {
                     // Add your data
                     List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
                     nameValuePairs.add(new BasicNameValuePair("titulo", titl));
-                    nameValuePairs.add(new BasicNameValuePair("img", "https://fbcdn-profile-a.akamaihd.net/hprofile-ak-frc3/t1.0-1/p100x100/10255214_10203942324537307_3503753291429194020_a.jpg"));
+                    nameValuePairs.add(new BasicNameValuePair("img", "something")); 
                     nameValuePairs.add(new BasicNameValuePair("desc", desc));
                     httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
        
