@@ -1,5 +1,5 @@
 //delay in ms
-        int DELAY = 3000;
+int DELAY = 3000;
  
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
