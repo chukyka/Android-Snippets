@@ -1,0 +1,138 @@
+package com.example.jsontry;
+ 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+ 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+ 
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
+import android.widget.TextView;
+ 
+public class MainActivity extends ActionBarActivity {
+ 
+        static String yahoo = "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quote%20where%20symbol%20in%20(%22MSFT%22)&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=";
+        static String symbol = "";
+        static String daysLow = "";
+        static String daysHigh = "";   
+        static String change = "";
+       
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+       
+        new MyAsyncTask().execute();
+       
+    }
+   
+    private class MyAsyncTask extends AsyncTask<String, String, String>{
+ 
+                @Override
+                protected String doInBackground(String... arg0) {
+                       
+                        //Creamos el cliente HTTP
+                        DefaultHttpClient httpclient = new DefaultHttpClient(new BasicHttpParams());
+                       
+                        //Pasamos por POST la url
+                        HttpPost htppost = new HttpPost(yahoo);
+                       
+                        //Definimos que tipo de dato nos pasan
+                        htppost.setHeader("Content-type", "application/json");
+                       
+                        //Leer data del URL
+                        InputStream inputStream = null;
+                       
+                        String result = null;
+                       
+                        try{
+                                //Pedir una respuesta de la pagina
+                                HttpResponse response = httpclient.execute(htppost);
+                                //Guarda todo el contenido
+                                HttpEntity entity = response.getEntity();
+                                //Obtenog el contenido
+                                inputStream = entity.getContent();
+                                //Lee todo el contenido
+                                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"), 8);
+                                //Guarda todo ahi
+                                StringBuilder theStringBuilder = new StringBuilder();
+                               
+                                String line = null;
+                                //Aca leemos todo
+                                while((line = reader.readLine()) != null){
+                                        theStringBuilder .append(line + "\n");
+                                }
+                                //Pasamos todo a result
+                                result = theStringBuilder.toString();
+                               
+                        }catch(Exception e){
+                               
+                                e.printStackTrace();
+                               
+                        }finally{
+                               
+                                try{
+                                        //Si se guardo algo cerramos el input stream
+                                        if(inputStream != null){
+                                                inputStream.close();
+                                        }else{
+                                                Log.e("No funciono", "Cerrar el inputStream");
+                                        }
+                                       
+                                }catch(Exception e){                                   
+                                        e.printStackTrace();                                   
+                                }
+                               
+                        }
+                       
+                        JSONObject jsonObject;
+                        try{
+                                // Hacemos que el resultado sea un JSONObject
+                                jsonObject = new JSONObject(result);
+                                // Buscamos el objeto query "Objeto"
+                                JSONObject queryJSONOBject = jsonObject.getJSONObject("query");
+                                // Dentro de query, por eso despues del igual aparece queryJSONOBject, buscamos a results "Objeto"
+                                JSONObject resultsJSONObject = queryJSONOBject.getJSONObject("results");
+                                // Dentro de results, por eso dps del igual aparece eso
+                                JSONObject quoteJSONObject = resultsJSONObject.getJSONObject("quote");
+                                // Finalmente obtenemos los strings
+                                symbol = quoteJSONObject.getString("symbol");
+                                daysLow = quoteJSONObject.getString("DaysLow");
+                                daysHigh = quoteJSONObject.getString("DaysHigh");
+                                change = quoteJSONObject.getString("Change");
+
+                        }catch(JSONException e){
+                                e.printStackTrace();
+                        }
+                       
+                       
+                        return result;
+                }
+               
+                @Override
+                protected void onPostExecute(String result) {
+                       
+                        TextView line1 = (TextView) findViewById(R.id.line1);
+                        TextView line2 = (TextView) findViewById(R.id.line2);
+                        TextView line3 = (TextView) findViewById(R.id.line3);
+                       
+                        line1.setText("Stock: " + symbol + " : " + change);
+                        line2.setText("Days Low: " + daysLow);
+                        line3.setText("Days High: " + daysHigh);
+                }
+   
+    }
+ 
+}
